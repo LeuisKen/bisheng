@@ -305,3 +305,36 @@ exports.deploy = function deploy(program) {
     exports.build(program, () => pushToGhPages(basePath, config));
   }
 };
+
+function getDefaultOfModule(module) {
+  return module.default || module;
+}
+
+function getRoutesPath(themePath, configEntryName) {
+  const routesPath = path.join(tmpDirPath, `routes.${configEntryName}.js`);
+  const { bishengConfig, themeConfig } = context;
+  fs.writeFileSync(
+    routesPath,
+    nunjucks.renderString(routesTemplate, {
+      themePath: escapeWinPath(themePath),
+      themeConfig: JSON.stringify(bishengConfig.themeConfig),
+      themeRoutes: JSON.stringify(themeConfig.routes),
+    }),
+  );
+  return routesPath;
+}
+
+function generateEntryFile(configTheme, configEntryName, root) {
+  const entryPath = path.join(tmpDirPath, `entry.${configEntryName}.js`);
+  const routesPath = getRoutesPath(
+    path.dirname(configTheme),
+    configEntryName,
+  );
+  fs.writeFileSync(
+    entryPath,
+    nunjucks.renderString(entryTemplate, {
+      routesPath: escapeWinPath(routesPath),
+      root: escapeWinPath(root),
+    }),
+  );
+}
