@@ -24,53 +24,59 @@ module.exports = function (markdownData, {
 }) {
     const content = markdownData.content;
 
-    if (Array.isArray(content)) {
-        markdownData.content = content.map(node => {
-            const tagName = node[0];
-            const attr = node[1];
-            if (tagName === 'pre' && attr && attr.lang === lang) {
-                const code = node[2][1];
-
-                // 计算哈希作为结果文件的文件名
-                const hash = crypto.createHash('md5').update(code).digest('hex');
-                const targetPath = path.join(tmpDir, `${hash}.san`);
-                const originPath = process.cwd() + '/' + markdownData.meta.filename;
-
-                // 对code中的相对路径做转换
-                const parsedSanAst = parse(code, parseOpts);
-                parsedSanAst
-                    .filter(el => (
-                        el.type === 'element'
-                        && el.tagName === 'script'
-                        && el.attributes.every(el => el.key !== 'src')
-                    ))
-                    .forEach(script => {
-                        const textNode = script.children[0];
-                        textNode.content = transform.normalizeDependences({
-                            code: textNode.content,
-                            targetPath,
-                            originPath,
-                            components: []
-                        });
-                    });
-                const parsedCode = stringify(parsedSanAst, parseOpts);
-
-                fs.writeFileSync(targetPath, parsedCode, 'utf8');
-                const moduleRes = loaderUtils.stringifyRequest(this, targetPath).slice(1, -1);
-
-                node[3] = {
-                    loadCodeAsModule: {
-                        __BISHENG_EMBEDED_CODE: true,
-                        code: `function () {
-                            const component = require('!!san-loader!${moduleRes}');
-                            return component;
-                        }`
-                    }
-                }
-            }
-            return node;
-        });
+    if (!Array.isArray(content)) {
+        return markdownData;
     }
+
+    markdownData.content = content.map(node => {
+        const tagName = node[0];
+        const attr = node[1];
+        const isCodeTag = tagName === 'pre' && attr && attr.lang === lang;
+
+        if (!isCodeTag) {
+            return node;
+        }
+
+        const code = node[2][1];
+
+        // 计算哈希作为结果文件的文件名
+        const hash = crypto.createHash('md5').update(code).digest('hex');
+        const targetPath = path.join(tmpDir, `${hash}.san`);
+        const originPath = process.cwd() + '/' + markdownData.meta.filename;
+
+        // 对code中的相对路径做转换
+        const parsedSanAst = parse(code, parseOpts);
+        parsedSanAst
+            .filter(el => (
+                el.type === 'element'
+                && el.tagName === 'script'
+                && el.attributes.every(el => el.key !== 'src')
+            ))
+            .forEach(script => {
+                const textNode = script.children[0];
+                textNode.content = transform.normalizeDependences({
+                    code: textNode.content,
+                    targetPath,
+                    originPath,
+                    components: []
+                });
+            });
+        const parsedCode = stringify(parsedSanAst, parseOpts);
+
+        fs.writeFileSync(targetPath, parsedCode, 'utf8');
+        const moduleRes = loaderUtils.stringifyRequest(this, targetPath).slice(1, -1);
+
+        node[3] = {
+            loadCodeAsModule: {
+                __BISHENG_EMBEDED_CODE: true,
+                code: `function () {
+                    const component = require('!!san-loader!${moduleRes}');
+                    return component;
+                }`
+            }
+        };
+        return node;
+    });
 
     return markdownData;
 }
