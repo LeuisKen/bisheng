@@ -1,7 +1,7 @@
 const R = require('ramda');
 const exist = require('exist.js');
 const { join } = require('path');
-const { toUriPath } = require('./escape-win-path');
+const { toUriPath } = require('bisheng-core/lib/utils/escape-win-path');
 
 function hasParams(path) {
   return path.split('/').some(snippet => snippet.startsWith(':'));

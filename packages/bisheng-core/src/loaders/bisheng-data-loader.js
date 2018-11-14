@@ -60,6 +60,7 @@ module.exports = function bishengDataLoader(/* content */) {
       const sourceDataString = sourceData.stringify(markdown, {
         lazyLoad: themeConfig.lazyLoad,
       });
+
       callback(
         null,
         'module.exports = {' +
