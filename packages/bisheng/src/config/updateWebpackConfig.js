@@ -1,7 +1,8 @@
 import path from 'path';
 import webpack from 'webpack';
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
-import context from '../context';
+import {injectDataRules} from 'bisheng-core/lib/config/injectDataRules';
+import context from 'bisheng-core/lib/context';
 import getStyleLoadersConfig from './getStyleLoadersConfig';
 
 const bishengLib = path.join(__dirname, '..');
@@ -35,13 +36,7 @@ export default function updateWebpackConfig(webpackConfig, mode) {
       });
     });
   }
-  webpackConfig.module.rules.push({
-    test(filename) {
-      return filename === path.join(bishengLib, 'utils', 'data.js') ||
-        filename === path.join(bishengLib, 'utils', 'ssr-data.js');
-    },
-    loader: path.join(bishengLibLoaders, 'bisheng-data-loader'),
-  });
+  injectDataRules(webpackConfig);
   /* eslint-enable no-param-reassign */
 
   const customizedWebpackConfig = bishengConfig.webpackConfig(webpackConfig, webpack);

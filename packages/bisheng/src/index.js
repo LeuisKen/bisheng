@@ -1,11 +1,11 @@
 import UglifyJsPlugin from 'uglifyjs-webpack-plugin';
 import openBrowser from 'react-dev-utils/openBrowser';
-import getWebpackCommonConfig from './config/getWebpackCommonConfig';
+import getWebpackCommonConfig from 'bisheng-core/lib/config/getWebpackCommonConfig';
 import updateWebpackConfig from './config/updateWebpackConfig';
 
 const fs = require('fs');
 const path = require('path');
-const { escapeWinPath } = require('./utils/escape-win-path');
+const { escapeWinPath } = require('bisheng-core/lib/utils/escape-win-path');
 const mkdirp = require('mkdirp');
 const nunjucks = require('nunjucks');
 const webpack = require('webpack');
@@ -13,10 +13,10 @@ const WebpackDevServer = require('webpack-dev-server');
 const R = require('ramda');
 const ghPages = require('gh-pages');
 const getBishengConfig = require('./utils/get-bisheng-config');
-const sourceData = require('./utils/source-data');
+const sourceData = require('bisheng-core/lib/utils/source-data');
 const generateFilesPath = require('./utils/generate-files-path');
 const getThemeConfig = require('./utils/get-theme-config');
-const context = require('./context');
+const context = require('bisheng-core/lib/context');
 
 const tmpDirPath = path.join(__dirname, '..', 'tmp');
 mkdirp.sync(tmpDirPath);
@@ -182,7 +182,7 @@ exports.build = function build(program, callback) {
     const template = fs.readFileSync(bishengConfig.htmlTemplate).toString();
 
     if (!program.ssr) {
-      require('./loaders/common/boss').jobDone();
+      require('bisheng-core/lib/loaders/common/boss').jobDone();
       const templateData = Object.assign({ root: bishengConfig.root }, bishengConfig.htmlTemplateExtraData || {});
       const fileContent = nunjucks.renderString(template, templateData);
       filesNeedCreated.forEach((file) => {
@@ -202,7 +202,7 @@ exports.build = function build(program, callback) {
     // If we can build webpackConfig without errors, we can build ssrWebpackConfig without errors.
     // Because ssrWebpackConfig are just part of webpackConfig.
     webpack(ssrWebpackConfig, () => {
-      require('./loaders/common/boss').jobDone();
+      require('bisheng-core/lib/loaders/common/boss').jobDone();
 
       const { ssr } = require(path.join(tmpDirPath, `${entryName}-ssr`));
       const fileCreatedPromises = filesNeedCreated.map((file) => {

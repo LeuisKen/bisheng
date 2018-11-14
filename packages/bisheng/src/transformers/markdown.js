@@ -1,5 +1,5 @@
 const markTwain = require('mark-twain');
-const { toUriPath } = require('../utils/escape-win-path');
+const { toUriPath } = require('bisheng-core/lib/utils/escape-win-path');
 
 module.exports = function (filename, fileContent) {
   const markdown = markTwain(fileContent);
