@@ -3,8 +3,6 @@ import webpack from 'webpack';
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
 import CaseSensitivePathsPlugin from 'case-sensitive-paths-webpack-plugin';
 import FriendlyErrorsWebpackPlugin from 'friendly-errors-webpack-plugin';
-import chalk from 'chalk';
-import WebpackBar from 'webpackbar';
 
 import getBabelCommonConfig from './getBabelCommonConfig';
 import getTSCommonConfig from './getTSCommonConfig';
@@ -99,9 +97,6 @@ export default function getWebpackCommonConfig() {
         allChunks: true,
       }),
       new CaseSensitivePathsPlugin(),
-      new WebpackBar({
-        name: '🚚  Bisheng',
-      }),
       new FriendlyErrorsWebpackPlugin(),
     ],
   };
