@@ -26,12 +26,12 @@ export default function getWebpackCommonConfig() {
     },
 
     resolve: {
-      modules: ['node_modules', join(__dirname, '../../node_modules')],
+      modules: ['node_modules', join(__dirname, '../../../node_modules')],
       extensions: ['.web.tsx', '.web.ts', '.web.jsx', '.web.js', '.ts', '.tsx', '.js', '.jsx', '.json'],
     },
 
     resolveLoader: {
-      modules: ['node_modules', join(__dirname, '../../node_modules')],
+      modules: ['node_modules', join(__dirname, '../../../node_modules')],
     },
 
     module: {

@@ -1,10 +1,41 @@
 #!/usr/bin/env node
 
+const path = require('path');
+const fs = require('fs');
+const resolve = require('resolve');
+
 const program = require('commander');
-const BiSheng = require('../lib');
+const BiSheng = require('bisheng-core');
 
 program
   .option('-c, --config <path>', 'set config path. defaults to ./bisheng.config.js')
   .parse(process.argv);
 
-BiSheng.start(program);
+const configFile = path.join(process.cwd(), program.config || 'bisheng.config.js');
+const bishengConfig = getBishengConfig(configFile);
+const themeConfig = getThemeConfig(bishengConfig.theme);
+
+BiSheng.dev({
+  entryTemplate: path.join(__dirname, '../lib/entry.nunjucks.js'),
+  routesTemplate: path.join(__dirname, '../lib/routes.nunjucks.js'),
+  bishengConfig,
+  themeConfig,
+  themeRoutes: themeConfig.routes
+});
+
+function getBishengConfig(configFile) {
+  const config = fs.existsSync(configFile) ? require(configFile) : {};
+  config.theme = resolve.sync(config.theme, { basedir: process.cwd() });
+  config.htmlTemplate = path.join(__dirname, '../lib/template.html');
+
+  return config;
+}
+
+function getThemeConfig(configFile) {
+  const customizedConfig = require(configFile);
+  const config = Object.assign({ plugins: [] }, customizedConfig);
+  const pluginHighlight = path.join(__dirname, '../lib/bisheng-plugin-highlight');
+  config.plugins = [pluginHighlight].concat(config.plugins);
+
+  return config;
+}

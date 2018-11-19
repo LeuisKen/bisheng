@@ -1,17 +1,14 @@
-import * as fs from 'fs';
 import * as path from 'path';
-import * as resolve from 'resolve';
 import rucksack from 'rucksack-css';
 import autoprefixer from 'autoprefixer';
 
-const markdownTransformer = path.join(__dirname, '..', 'transformers', 'markdown');
+const markdownTransformer = path.join(__dirname, '../..', 'transformers', 'markdown');
 
 const defaultConfig = {
   port: 8000,
   source: './posts',
   output: './_site',
   theme: './_theme',
-  htmlTemplate: path.join(__dirname, '../template.html'),
   transformers: [],
   devServerConfig: {},
   postcssConfig: {
@@ -33,10 +30,8 @@ const defaultConfig = {
   },
 };
 
-module.exports = function getBishengConfig(configFile) {
-  const customizedConfig = fs.existsSync(configFile) ? require(configFile) : {};
+module.exports = function updateBishengConfig(customizedConfig) {
   const config = Object.assign({}, defaultConfig, customizedConfig);
-  config.theme = resolve.sync(config.theme, { basedir: process.cwd() });
   config.transformers = config.transformers.concat({
     test: /\.md$/,
     use: markdownTransformer,
