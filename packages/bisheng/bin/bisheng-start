@@ -36,7 +36,7 @@ function getBishengConfig(configFile) {
       })
     );
     return customConfigFn(webpackConfig, webpack);
-  })(config.webpackConfig);
+  })(config.webpackConfig || R.identity);
 
   return config;
 }
