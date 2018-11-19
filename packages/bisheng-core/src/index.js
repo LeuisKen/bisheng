@@ -136,15 +136,24 @@ function filenameToUrl(filename) {
   return filename.replace(/\.html$/, '');
 }
 
-exports.build = function build(program, callback) {
-  const configFile = path.join(process.cwd(), program.config || 'bisheng.config.js');
-  const bishengConfig = updateBishengConfig(configFile);
-  const themeConfig = updateThemeConfig(bishengConfig.theme);
+exports.build = function build(customizedContext) {
+  const bishengConfig = updateBishengConfig(customizedContext.bishengConfig);
+  const themeConfig = updateThemeConfig(customizedContext.themeConfig);
+  const tmpDirPath = path.join(path.dirname(customizedContext.entryTemplate), '..', 'tmp');
+  const callback = customizedContext.callback;
+
   context.initialize({
+    entryTemplate: fs.readFileSync(customizedContext.entryTemplate).toString(),
+    ssrTemplate: fs.readFileSync(customizedContext.ssrTemplate).toString(),
+    routesTemplate: fs.readFileSync(customizedContext.routesTemplate).toString(),
+    tmpDirPath,
     bishengConfig,
     themeConfig,
+    themeRoutes: customizedContext.themeRoutes,
     isBuild: true,
   });
+
+  mkdirp.sync(tmpDirPath);
   mkdirp.sync(bishengConfig.output);
 
   const { entryName } = bishengConfig;
@@ -171,9 +180,8 @@ exports.build = function build(program, callback) {
   const ssrWebpackConfig = Object.assign({}, webpackConfig);
   const ssrPath = path.join(tmpDirPath, `ssr.${entryName}.js`);
   const routesPath = getRoutesPath(path.dirname(bishengConfig.theme), entryName);
-  const ssrTemplate = fs.readFileSync(path.join(__dirname, 'ssr.nunjucks.js')).toString();
 
-  fs.writeFileSync(ssrPath, nunjucks.renderString(ssrTemplate, { routesPath: escapeWinPath(routesPath) }));
+  fs.writeFileSync(ssrPath, nunjucks.renderString(context.ssrTemplate, { routesPath: escapeWinPath(routesPath) }));
 
   ssrWebpackConfig.entry = {
     [`${entryName}-ssr`]: ssrPath,
@@ -201,7 +209,7 @@ exports.build = function build(program, callback) {
 
     const template = fs.readFileSync(bishengConfig.htmlTemplate).toString();
 
-    if (!program.ssr) {
+    if (!customizedContext.ssr) {
       require('./loaders/common/boss').jobDone();
       const templateData = Object.assign(
         { root: bishengConfig.root },
