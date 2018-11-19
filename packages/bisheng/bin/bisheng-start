@@ -6,6 +6,8 @@ const resolve = require('resolve');
 
 const program = require('commander');
 const BiSheng = require('bisheng-core');
+const R = require('ramda');
+const WebpackBar = require('webpackbar');
 
 program
   .option('-c, --config <path>', 'set config path. defaults to ./bisheng.config.js')
@@ -27,6 +29,15 @@ function getBishengConfig(configFile) {
   const config = fs.existsSync(configFile) ? require(configFile) : {};
   config.theme = resolve.sync(config.theme, { basedir: process.cwd() });
   config.htmlTemplate = path.join(__dirname, '../lib/template.html');
+  config.webpackConfig = (customConfigFn => (webpackConfig, webpack) => {
+    webpackConfig.plugins.push(
+      new WebpackBar({
+        name: '🚚  Bisheng',
+        color: '#2f54eb',
+      })
+    );
+    return customConfigFn(webpackConfig, webpack);
+  })(config.webpackConfig);
 
   return config;
 }
