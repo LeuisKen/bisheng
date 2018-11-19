@@ -30,7 +30,7 @@ export default function getWebpackCommonConfig() {
     },
 
     resolve: {
-      modules: ['node_modules', join(__dirname, '../../node_modules')],
+      modules: ['node_modules', join(__dirname, '../../../node_modules')],
       extensions: [
         '.web.tsx',
         '.web.ts',
@@ -45,7 +45,7 @@ export default function getWebpackCommonConfig() {
     },
 
     resolveLoader: {
-      modules: ['node_modules', join(__dirname, '../../node_modules')],
+      modules: ['node_modules', join(__dirname, '../../../node_modules')],
     },
 
     module: {

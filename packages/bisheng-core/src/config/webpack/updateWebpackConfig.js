@@ -1,10 +1,10 @@
 import path from 'path';
 import webpack from 'webpack';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
-import context from '../context';
+import context from '../../context';
 import getStyleLoadersConfig from './getStyleLoadersConfig';
 
-const bishengLib = path.join(__dirname, '..');
+const bishengLib = path.join(__dirname, '../..');
 const bishengLibLoaders = path.join(bishengLib, 'loaders');
 
 export default function updateWebpackConfig(webpackConfig, mode) {
@@ -17,7 +17,7 @@ export default function updateWebpackConfig(webpackConfig, mode) {
     webpackConfig.output.path = path.join(process.cwd(), bishengConfig.output);
   }
   webpackConfig.output.publicPath = context.isBuild ? bishengConfig.root : '/';
-  if (mode === 'start') {
+  if (mode === 'dev') {
     styleLoadersConfig.forEach((config) => {
       webpackConfig.module.rules.push({
         test: config.test,
@@ -36,8 +36,8 @@ export default function updateWebpackConfig(webpackConfig, mode) {
   webpackConfig.module.rules.push({
     test(filename) {
       return (
-        filename === path.join(bishengLib, 'utils', 'data.js')
-        || filename === path.join(bishengLib, 'utils', 'ssr-data.js')
+        filename === path.join(bishengLib, 'placeholders', 'data.js')
+        || filename === path.join(bishengLib, 'placeholders', 'ssr-data.js')
       );
     },
     loader: path.join(bishengLibLoaders, 'bisheng-data-loader'),
@@ -50,9 +50,7 @@ export default function updateWebpackConfig(webpackConfig, mode) {
   );
 
   const entryPath = path.join(
-    bishengLib,
-    '..',
-    'tmp',
+    context.tmpDirPath,
     `entry.${bishengConfig.entryName}.js`,
   );
   if (customizedWebpackConfig.entry[bishengConfig.entryName]) {
@@ -61,5 +59,6 @@ export default function updateWebpackConfig(webpackConfig, mode) {
     );
   }
   customizedWebpackConfig.entry[bishengConfig.entryName] = entryPath;
+
   return customizedWebpackConfig;
 }
