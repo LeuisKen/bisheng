@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const program = require('commander');
-const BiSheng = require('../lib');
+const BiSheng = require('bisheng-core');
 
 program
   .option('-c, --config <path>', 'set config path. defaults to ./bisheng.config.js')
@@ -11,4 +11,78 @@ program
   .option('-b, --branch <branch>', 'name of the branch you\'ll be pushing to', 'gh-pages')
   .parse(process.argv);
 
-BiSheng.deploy(program);
+deploy(program);
+
+function deploy(program) {
+  const config = {
+    remote: program.remote,
+    branch: program.branch,
+  };
+  if (program.pushOnly) {
+    const output = typeof program.pushOnly === 'string' ? program.pushOnly : './_site';
+    const basePath = path.join(process.cwd(), output);
+    pushToGhPages(basePath, config);
+  } else {
+    const configFile = path.join(process.cwd(), program.config || 'bisheng.config.js');
+    const bishengConfig = getBishengConfig(configFile);
+    const themeConfig = getThemeConfig(bishengConfig.theme);
+    const basePath = path.join(process.cwd(), bishengConfig.output || './_site');
+
+    BiSheng.build({
+      entryTemplate: path.join(__dirname, '../lib/entry.nunjucks.js'),
+      ssrTemplate: path.join(__dirname, '../lib/ssr.nunjucks.js'),
+      routesTemplate: path.join(__dirname, '../lib/routes.nunjucks.js'),
+      bishengConfig,
+      themeConfig,
+      themeRoutes: themeConfig.routes,
+      ssr: program.ssr
+    }, () => pushToGhPages(basePath, config));
+  }
+}
+
+function pushToGhPages(basePath, config) {
+  const options = {
+    ...config,
+    depth: 1,
+    logger(message) {
+      console.log(message);
+    },
+  };
+  if (process.env.RUN_ENV_USER) {
+    options.user = {
+      name: process.env.RUN_ENV_USER,
+      email: process.env.RUN_ENV_EMAIL,
+    };
+  }
+  ghPages.publish(basePath, options, (err) => {
+    if (err) {
+      throw err;
+    }
+    console.log('Site has been published!');
+  });
+}
+
+function getBishengConfig(configFile) {
+  const config = fs.existsSync(configFile) ? require(configFile) : {};
+  config.theme = resolve.sync(config.theme, { basedir: process.cwd() });
+  config.htmlTemplate = path.join(__dirname, '../lib/template.html');
+  config.webpackConfig = (customConfigFn => (webpackConfig, webpack) => {
+    webpackConfig.plugins.push(
+      new WebpackBar({
+        name: '🚚  Bisheng',
+      })
+    );
+    return customConfigFn(webpackConfig, webpack);
+  })(config.webpackConfig || R.identity);
+
+  return config;
+}
+
+function getThemeConfig(configFile) {
+  const customizedConfig = require(configFile);
+  const config = Object.assign({ plugins: [] }, customizedConfig);
+  const pluginHighlight = path.join(__dirname, '../lib/bisheng-plugin-highlight');
+  config.plugins = [pluginHighlight].concat(config.plugins);
+
+  return config;
+}
