@@ -7,7 +7,7 @@ const React = require('react');
 const ReactDOM = require('react-dom');
 const ReactRouter = require('react-router');
 const history = require('history');
-const data = require('../lib/utils/data.js');
+const data = require('bisheng-core/lib/placeholders/data.js');
 const createElement = require('../lib/utils/create-element');
 const routes = require('{{ routesPath }}')(data);
 

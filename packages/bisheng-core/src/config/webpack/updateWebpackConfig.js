@@ -1,10 +1,10 @@
 import path from 'path';
 import webpack from 'webpack';
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
-import context from '../context';
+import context from '../../context';
 import getStyleLoadersConfig from './getStyleLoadersConfig';
 
-const bishengLib = path.join(__dirname, '..');
+const bishengLib = path.join(__dirname, '../..');
 const bishengLibLoaders = path.join(bishengLib, 'loaders');
 
 export default function updateWebpackConfig(webpackConfig, mode) {
@@ -17,7 +17,7 @@ export default function updateWebpackConfig(webpackConfig, mode) {
     webpackConfig.output.path = path.join(process.cwd(), bishengConfig.output);
   }
   webpackConfig.output.publicPath = context.isBuild ? bishengConfig.root : '/';
-  if (mode === 'start') {
+  if (mode === 'dev') {
     styleLoadersConfig.forEach((config) => {
       webpackConfig.module.rules.push({
         test: config.test,
@@ -37,8 +37,8 @@ export default function updateWebpackConfig(webpackConfig, mode) {
   }
   webpackConfig.module.rules.push({
     test(filename) {
-      return filename === path.join(bishengLib, 'utils', 'data.js') ||
-        filename === path.join(bishengLib, 'utils', 'ssr-data.js');
+      return filename === path.join(bishengLib, 'placeholders/data.js') ||
+        filename === path.join(bishengLib, 'placeholders/ssr-data.js');
     },
     loader: path.join(bishengLibLoaders, 'bisheng-data-loader'),
   });
@@ -46,10 +46,11 @@ export default function updateWebpackConfig(webpackConfig, mode) {
 
   const customizedWebpackConfig = bishengConfig.webpackConfig(webpackConfig, webpack);
 
-  const entryPath = path.join(bishengLib, '..', 'tmp', `entry.${bishengConfig.entryName}.js`);
+  const entryPath = path.join(context.tmpDirPath, `entry.${bishengConfig.entryName}.js`);
   if (customizedWebpackConfig.entry[bishengConfig.entryName]) {
     throw new Error(`Should not set \`webpackConfig.entry.${bishengConfig.entryName}\`!`);
   }
   customizedWebpackConfig.entry[bishengConfig.entryName] = entryPath;
+
   return customizedWebpackConfig;
 }

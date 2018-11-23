@@ -1,7 +1,7 @@
 import UglifyJsPlugin from 'uglifyjs-webpack-plugin';
 import openBrowser from 'react-dev-utils/openBrowser';
-import getWebpackCommonConfig from './config/getWebpackCommonConfig';
-import updateWebpackConfig from './config/updateWebpackConfig';
+import getWebpackCommonConfig from './config/webpack/getWebpackCommonConfig';
+import updateWebpackConfig from './config/webpack/updateWebpackConfig';
 
 const fs = require('fs');
 const path = require('path');
@@ -12,19 +12,15 @@ const webpack = require('webpack');
 const WebpackDevServer = require('webpack-dev-server');
 const R = require('ramda');
 const ghPages = require('gh-pages');
-const getBishengConfig = require('./utils/get-bisheng-config');
+const updateBishengConfig = require('./config/bisheng/update-bisheng-config');
 const sourceData = require('./utils/source-data');
 const generateFilesPath = require('./utils/generate-files-path');
-const getThemeConfig = require('./utils/get-theme-config');
+const updateThemeConfig = require('./config/bisheng/update-theme-config');
 const context = require('./context');
 
-const tmpDirPath = path.join(__dirname, '..', 'tmp');
-mkdirp.sync(tmpDirPath);
-
 function getRoutesPath(themePath, configEntryName) {
-  const routesTemplate = fs.readFileSync(path.join(__dirname, 'routes.nunjucks.js')).toString();
+  const { bishengConfig, themeConfig, routesTemplate, tmpDirPath } = context;
   const routesPath = path.join(tmpDirPath, `routes.${configEntryName}.js`);
-  const { bishengConfig, themeConfig } = context;
   fs.writeFileSync(
     routesPath,
     nunjucks.renderString(routesTemplate, {
@@ -37,7 +33,7 @@ function getRoutesPath(themePath, configEntryName) {
 }
 
 function generateEntryFile(configTheme, configEntryName, root) {
-  const entryTemplate = fs.readFileSync(path.join(__dirname, 'entry.nunjucks.js')).toString();
+  const { entryTemplate, tmpDirPath } = context;
   const entryPath = path.join(tmpDirPath, `entry.${configEntryName}.js`);
   const routesPath = getRoutesPath(
     path.dirname(configTheme),
@@ -52,14 +48,21 @@ function generateEntryFile(configTheme, configEntryName, root) {
   );
 }
 
-exports.start = function start(program) {
-  const configFile = path.join(process.cwd(), program.config || 'bisheng.config.js');
-  const bishengConfig = getBishengConfig(configFile);
-  const themeConfig = getThemeConfig(bishengConfig.theme);
+exports.dev = function dev(customizedContext) {
+  const bishengConfig = updateBishengConfig(customizedContext.bishengConfig);
+  const themeConfig = updateThemeConfig(customizedContext.themeConfig);
+  const tmpDirPath = path.join(path.dirname(customizedContext.entryTemplate), '..', 'tmp');
+
   context.initialize({
+    entryTemplate: fs.readFileSync(customizedContext.entryTemplate).toString(),
+    routesTemplate: fs.readFileSync(customizedContext.routesTemplate).toString(),
+    tmpDirPath,
     bishengConfig,
     themeConfig,
+    themeRoutes: customizedContext.themeRoutes
   });
+
+  mkdirp.sync(tmpDirPath);
   mkdirp.sync(bishengConfig.output);
 
   const template = fs.readFileSync(bishengConfig.htmlTemplate).toString();
@@ -73,7 +76,7 @@ exports.start = function start(program) {
     '/',
   );
 
-  const webpackConfig = updateWebpackConfig(getWebpackCommonConfig(), 'start');
+  const webpackConfig = updateWebpackConfig(getWebpackCommonConfig(), 'dev');
   webpackConfig.plugins.push(new webpack.HotModuleReplacementPlugin());
   const serverOptions = {
     quiet: true,
@@ -106,7 +109,6 @@ exports.start = function start(program) {
   );
 };
 
-const ssrTemplate = fs.readFileSync(path.join(__dirname, 'ssr.nunjucks.js')).toString();
 
 function filenameToUrl(filename) {
   if (filename.endsWith('index.html')) {
@@ -115,15 +117,23 @@ function filenameToUrl(filename) {
   return filename.replace(/\.html$/, '');
 }
 
-exports.build = function build(program, callback) {
-  const configFile = path.join(process.cwd(), program.config || 'bisheng.config.js');
-  const bishengConfig = getBishengConfig(configFile);
-  const themeConfig = getThemeConfig(bishengConfig.theme);
+exports.build = function build(customizedContext, callback) {
+  const bishengConfig = updateBishengConfig(customizedContext.bishengConfig);
+  const themeConfig = updateThemeConfig(customizedContext.themeConfig);
+  const tmpDirPath = path.join(path.dirname(customizedContext.entryTemplate), '..', 'tmp');
+
   context.initialize({
+    entryTemplate: fs.readFileSync(customizedContext.entryTemplate).toString(),
+    ssrTemplate: fs.readFileSync(customizedContext.ssrTemplate).toString(),
+    routesTemplate: fs.readFileSync(customizedContext.routesTemplate).toString(),
+    tmpDirPath,
     bishengConfig,
     themeConfig,
+    themeRoutes: customizedContext.themeRoutes,
     isBuild: true,
   });
+
+  mkdirp.sync(tmpDirPath);
   mkdirp.sync(bishengConfig.output);
 
   const { entryName } = bishengConfig;
@@ -151,7 +161,8 @@ exports.build = function build(program, callback) {
   const ssrWebpackConfig = Object.assign({}, webpackConfig);
   const ssrPath = path.join(tmpDirPath, `ssr.${entryName}.js`);
   const routesPath = getRoutesPath(path.dirname(bishengConfig.theme), entryName);
-  fs.writeFileSync(ssrPath, nunjucks.renderString(ssrTemplate, { routesPath: escapeWinPath(routesPath) }));
+
+  fs.writeFileSync(ssrPath, nunjucks.renderString(context.ssrTemplate, { routesPath: escapeWinPath(routesPath) }));
 
   ssrWebpackConfig.entry = {
     [`${entryName}-ssr`]: ssrPath,
@@ -181,7 +192,7 @@ exports.build = function build(program, callback) {
 
     const template = fs.readFileSync(bishengConfig.htmlTemplate).toString();
 
-    if (!program.ssr) {
+    if (!customizedContext.ssr) {
       require('./loaders/common/boss').jobDone();
       const templateData = Object.assign({ root: bishengConfig.root }, bishengConfig.htmlTemplateExtraData || {});
       const fileContent = nunjucks.renderString(template, templateData);
@@ -231,42 +242,4 @@ exports.build = function build(program, callback) {
         });
     });
   });
-};
-
-function pushToGhPages(basePath, config) {
-  const options = {
-    ...config,
-    depth: 1,
-    logger(message) {
-      console.log(message);
-    },
-  };
-  if (process.env.RUN_ENV_USER) {
-    options.user = {
-      name: process.env.RUN_ENV_USER,
-      email: process.env.RUN_ENV_EMAIL,
-    };
-  }
-  ghPages.publish(basePath, options, (err) => {
-    if (err) {
-      throw err;
-    }
-    console.log('Site has been published!');
-  });
-}
-exports.deploy = function deploy(program) {
-  const config = {
-    remote: program.remote,
-    branch: program.branch,
-  };
-  if (program.pushOnly) {
-    const output = typeof program.pushOnly === 'string' ? program.pushOnly : './_site';
-    const basePath = path.join(process.cwd(), output);
-    pushToGhPages(basePath, config);
-  } else {
-    const configFile = path.join(process.cwd(), program.config || 'bisheng.config.js');
-    const bishengConfig = getBishengConfig(configFile);
-    const basePath = path.join(process.cwd(), bishengConfig.output);
-    exports.build(program, () => pushToGhPages(basePath, config));
-  }
 };

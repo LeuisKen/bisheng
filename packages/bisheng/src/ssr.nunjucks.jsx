@@ -4,7 +4,7 @@ const React = require('react');
 const ReactDOMServer = require('react-dom/server');
 const ReactRouter = require('react-router');
 const createElement = require('../lib/utils/create-element');
-const data = require('../lib/utils/ssr-data.js');
+const data = require('bisheng-core/lib/placeholders/ssr-data.js');
 const routes = require('{{ routesPath }}')(data);
 
 module.exports = function ssr(url, callback) {
