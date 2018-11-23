@@ -136,11 +136,10 @@ function filenameToUrl(filename) {
   return filename.replace(/\.html$/, '');
 }
 
-exports.build = function build(customizedContext) {
+exports.build = function build(customizedContext, callback) {
   const bishengConfig = updateBishengConfig(customizedContext.bishengConfig);
   const themeConfig = updateThemeConfig(customizedContext.themeConfig);
   const tmpDirPath = path.join(path.dirname(customizedContext.entryTemplate), '..', 'tmp');
-  const callback = customizedContext.callback;
 
   context.initialize({
     entryTemplate: fs.readFileSync(customizedContext.entryTemplate).toString(),
