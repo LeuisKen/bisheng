@@ -16,7 +16,9 @@ const parseOpts = {
 const tmpDir = path.join(__dirname, '__tmp__');
 
 if (!fs.existsSync(tmpDir)) {
-    fs.mkdir(tmpDir);
+    fs.mkdir(tmpDir, err => {
+        if (err) throw err;
+    });
 }
 
 module.exports = function (markdownData, {
