@@ -9,7 +9,6 @@ const nunjucks = require('nunjucks');
 const webpack = require('webpack');
 const WebpackDevServer = require('webpack-dev-server');
 const R = require('ramda');
-const ghPages = require('gh-pages');
 const updateBishengConfig = require('./config/bisheng/update-bisheng-config');
 const sourceData = require('./utils/source-data');
 const generateFilesPath = require('./utils/generate-files-path');

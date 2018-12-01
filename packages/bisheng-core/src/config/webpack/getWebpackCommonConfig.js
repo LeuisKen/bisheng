@@ -3,11 +3,7 @@ import { join } from 'path';
 import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import CaseSensitivePathsPlugin from 'case-sensitive-paths-webpack-plugin';
 import FriendlyErrorsWebpackPlugin from 'friendly-errors-webpack-plugin';
-<<<<<<< HEAD
 import TerserPlugin from 'terser-webpack-plugin';
-import WebpackBar from 'webpackbar';
-=======
->>>>>>> refactor(bisheng-core): 拆分 WebpackBar 配置
 
 import getBabelCommonConfig from './getBabelCommonConfig';
 import getTSCommonConfig from './getTSCommonConfig';
